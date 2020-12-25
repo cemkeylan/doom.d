@@ -1,0 +1,391 @@
+#+TITLE: Literate Doom Configuration
+#+AUTHOR: Cem Keylan
+#+PROPERTY: header-args :tangle config.el
+
+This is my Doom Emacs literate configuration. I am new to Doom, so I don't know
+what I want to configure yet. I am trying to add some functions from my old
+vanilla Emacs configuration. I am still learning how to configure Doom as I was
+configuring my own vanilla Emacs. I prefer configuration from org-mode so I can
+easily navigate and better express myself.
+
+* BOF and Personal Information
+
+These are just the beginning of the export files and my personal information,
+nothing special.
+
+#+begin_src elisp
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+;; This is my private configuration file, generated from the README.org file.
+
+(setq user-full-name    "Cem Keylan"
+      user-mail-address "cem@ckyln.com")
+#+end_src
+
+#+begin_src elisp :tangle packages.el
+;; -*- no-byte-compile: t; -*-
+;;; $DOOMDIR/packages.el
+#+end_src
+
+** Leader keys
+
+Most META keys are used by my window manager configuration, so I don't want to
+bind alt-keys to my META key. I also don't want my local-leader to be a part of
+the leader itself, because I don't want to press an extra key for mode-specific
+bindings.
+
+#+begin_src elisp
+(setq doom-leader-alt-key "C-SPC"
+      doom-localleader-key ","
+      doom-localleader-alt-key "C-,")
+#+end_src
+
+* Reclaiming Functions
+
+There are some features that I don't exactly appreciate, so I want to redefine
+or remove them.
+
+** Substitution
+
+I am not a big fan of =evil-snipe= as I use =s= (substitute) a lot. I've removed
+the package from my configuration to reclaim =s=.
+
+#+begin_src elisp :tangle packages.el
+(package! evil-snipe :disable t)
+#+end_src
+
+** TAB functionality
+
+I like the default functionality of pressing TAB on Emacs. I don't want to jump
+between items or anything like that. I think Emacs is pretty good at indenting
+automatically, I can re-align stuff by using space or backspace if am unhappy
+with it. I don't want Doom to insert snippets on visual mode, or jump between
+parentheses on normal mode. Just reclaim default functionality.
+
+As a NOTE, I only care about reclaiming this functionality on =prog-mode=.
+
+#+begin_src elisp
+(setq-hook! prog-mode tab-always-indent t)
+(map! :mode prog-mode
+      :nvmi [tab] #'indent-for-tab-command)
+#+end_src
+
+* Org-mode
+
+I save my org-mode files on the default directory set by Doom.
+
+#+begin_src elisp
+(setq org-directory "~/org/")
+#+end_src
+
+Below is my main configuration for org-mode, which is set after org is loaded. I
+have taken most of these from Bernt Hansten's [[http://doc.norang.ca/org-mode.html][Guide to Org Mode]].
+
+#+begin_src elisp
+(after! org
+  (setq-default
+  org-adapt-indentation nil
+  org-agenda-span 'week
+  org-todo-keywords `((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+                       (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|"
+                                 "CANCELLED(c@/!)" "PHONE" "MEETING"))
+  org-use-fast-todo-selection t
+  org-refile-targets '((nil :maxlevel . 9) (org-agenda-files :maxlevel . 9))
+  org-refile-use-outline-path t
+  org-outline-path-complete-in-steps nil
+  org-todo-keyword-faces
+  '(("TODO" :foreground "orange red" :weight bold)
+    ("NEXT" :foreground "cyan" :weight bold)
+    ("DONE" :foreground "spring green" :weight bold)
+    ("WAITING" :foreground "orange" :weight bold)
+    ("HOLD" :foreground "hot pink" :weight bold)
+    ("CANCELLED" :foreground "spring green" :weight bold)
+    ("MEETING" :foreground "spring green" :weight bold)
+    ("PHONE" :foreground "spring green" :weight bold))
+  org-export-backends '(ascii beamer html latex man md groff
+                              texinfo koma-letter)))
+#+end_src
+
+** Doct
+
+=doct= is the "Declarative Org Capture Template". I use it to have a better
+visual way of understanding my capture templates.
+
+#+begin_src elisp
+(use-package! doct
+  :after org
+  :config
+  (setq org-capture-templates
+        (doct '(("todo"
+                 :keys "t"
+                 :file "~/org/refile.org"
+                 :clock-in t
+                 :template ("* %{todo-state} %^{Description}"
+                            ":PROPERTIES:"
+                            ":Created: %U"
+                            ":END:" "%?")
+                 :children (("todo"
+                             :keys "t"
+                             :todo-state "TODO")
+                            ("next"
+                             :keys "n"
+                             :todo-state "NEXT")))
+                ("note"
+                 :keys "n"
+                 :file "~/org/refile.org"
+                 :clock-in t
+                 :template ("* %? :NOTE:"
+                            "%U"
+                            "%a"))
+                ("email"
+                 :keys "e"
+                 :file "~/org/refile.org"
+                 :clock-in t
+                 :template ("* %? :EMAIL:" "%U" "%a"))
+                ("phone"
+                 :keys "p"
+                 :file "~/org/refile.org"
+                 :clock-in t
+                 :template ("* PHONE %? :PHONE:" "%U" "%a"))
+                ("journal"
+                 :keys "j"
+                 :file "~/org/diary.org"
+                 :datetree t
+                 :template ("* %?" "%U"))
+                ("recipe"
+                 :keys "r"
+                 :file "~/org/recipe.org"
+                 :template ("* %^{Recipe}"
+                            ":PROPERTIES:"
+                            ":Created: %U"
+                            ":END:" "%?"
+                            "** Ingredients"
+                            "** Instructions"))))))
+#+end_src
+
+#+begin_src elisp :tangle packages.el
+(package! doct)
+#+end_src
+
+** Source Edit Mode
+
+When I am editing a source block, I want to return back to my org-mode buffer
+with a single press.
+
+#+begin_src elisp
+(define-key!
+  :definer 'minor-mode
+  :states  'normal
+  :keymaps 'org-src-mode
+  "RET" #'org-edit-src-exit)
+#+end_src
+
+* Email
+
+I don't use the mu4e configuration from Doom. I have mu4e installed on my
+system, and I use a custom configuration which is set by [[https://github.com/cemkeylan/mu-wizard][my mu4e wizard]].
+
+#+begin_src elisp
+(use-package mu4e
+  :if (executable-find "mu")
+  :commands mu4e mu4e-compose-new
+  :init
+  (map!
+   :leader
+   "m u" #'mu4e
+   "m c" #'mu4e-compose-new))
+
+(add-to-list 'load-path "~/conf/mu4e/")
+(use-package mu4e-config
+  :if (executable-find "mu")
+  :after mu4e)
+#+end_src
+
+* User Interface
+** Doom theme
+
+People that know me knows that I am not good with themes and colour design in
+general. They also know that I slap the dracula theme to anything that I set my
+eyes on. Doom is not any different for this matter.
+
+#+begin_src elisp
+(setq doom-theme 'doom-dracula)
+#+end_src
+
+** Line numbers
+
+I always use relative numbers, but I personally do not like line-numbers on Text
+modes.
+
+#+begin_src elisp
+(setq display-line-numbers-type 'relative)
+(setq-hook! text-mode display-line-numbers-type nil)
+#+end_src
+
+* Personal packages
+
+I have some personal packages and configurations that I want to load. I also
+have a =lisp/= directory that I want to add to my load-path.
+
+#+begin_src elisp
+(add-load-path! "lisp/")
+#+end_src
+
+** Doas Edit
+
+I prefer using doas instead of =sudo=, so I have customized =sudo-edit= to use
+doas instead.
+
+#+begin_src elisp
+(use-package! doas-edit
+  :if (executable-find "doas")
+  :commands doas-edit-find-file doas-edit
+  :init
+  (map!
+    [remap doom/sudo-find-file] #'doas-edit-find-file
+    [remap doom/sudo-this-file] #'doas-edit))
+#+end_src
+
+#+begin_src elisp :tangle packages.el
+(package! doas-edit
+  :recipe (:host github :repo "cemkeylan/doas-edit"))
+#+end_src
+
+** Redo mode
+
+I use the redo build system for some of my software. I have made a simple
+=redo-mode= which adds some syntax highlighting to redo build files (shell
+scripts).
+
+#+begin_src elisp
+(use-package! redo-mode
+  :mode "\\.do\\'")
+#+end_src
+
+#+begin_src elisp :tangle packages.el
+(package! redo-mode
+  :recipe (:host github :repo "cemkeylan/redo-mode"))
+#+end_src
+
+** CPT
+
+I have some simplistic functions as a package maintainer to ease off my work.
+
+#+begin_src elisp
+(use-package! cpt
+  :commands cpt-find-file
+  :init
+  (map!
+   :leader
+   (:prefix ("c p" . "Package manager")
+    :desc "Find package file" "f" #'cpt-find-file)))
+#+end_src
+
+* Editor Configuration
+
+What is the point of a text editor if you are not going to configure it like a
+maniac? What are you going to do instead? Write code? The AUDACITY!
+
+I care about readability of the source code or the text I write. Even if I am
+writing markdown, I care more about readability with a pager than HTML output.
+HTML prettifies the text, a pager does not.
+
+** Text filling
+
+I use text-filling functions in order to stay less than 80 characters where
+possible. I enforce this on text-modes where there is no excuse for writing more
+than 80 characters on a file.
+
+#+begin_src elisp
+(setq-default fill-column 80)
+(add-hook! text-mode 'auto-fill-mode)
+#+end_src
+
+** Visual Lines
+
+I sometimes connect to Emacs from my phone (please don't get mad I want to
+continue editing text while going out for a smoke). However, since the screen
+of my phone is extremely small, I use visual-line-mode for editing text, and I
+basically map =j= to =gj= and =k= to =gk= for easier navigation.
+
+#+begin_src elisp
+;; I don't want to enforce visual-lines on prog-mode
+(add-hook! text-mode 'visual-line-mode)
+
+(map! [remap evil-next-line]     #'evil-next-visual-line
+      [remap evil-previous-line] #'evil-previous-visual-line)
+#+end_src
+
+** Getting some Emacs movements
+
+I am brain-dead so I constantly try to switch between Emacs keys and Vim keys
+even after four years of using Vim and a year of using Evil-mode. Let's accept
+this behaviour and map some Emacs keys to evil-mode.
+
+#+begin_src elisp
+(map! :nmi  "C-n" #'next-line
+      :nmi  "C-p" #'previous-line
+      :i    "C-a" #'move-beginning-of-line
+      :i    "C-e" #'move-end-of-line)
+#+end_src
+
+** Coding system
+
+For some reason, unless you set your preferred coding system, there will be
+inconsistencies between the terminal and GUI Emacs frames.
+
+#+begin_src elisp
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+#+end_src
+
+* Other settings
+** Synchronizing tangled files with the README
+
+I had adopted this method while I was using my vanilla Emacs with my literate
+configuration. I have a =pre-commit= hook so I can commit specific hunks for
+each file.
+
+#+begin_src sh :tangle pre-commit.hook :tangle-mode (identity #o755)
+#!/bin/sh -e
+
+# Create the staged version of the README file to a temporary file
+git show :README.org > README.tmp.org
+trap 'rm -f README.tmp.org' EXIT INT
+
+# Tangle the temporary file and stage the tangled files
+org-tangle README.tmp.org
+git add config.el packages.el pre-commit.hook
+
+# Revert to the previous state by re-tangling the previous version
+org-tangle README.org
+#+end_src
+
+I add this hook to the repository by symbolically linking it to the =.git=
+directory.
+
+#+begin_src sh :tangle no
+ln -sf ../../pre-commit.hook .git/hooks/pre-commit
+#+end_src
+
+** Dired
+
+I don't use coreutils, so my =ls= does not have the =--dired= option.
+
+#+begin_src elisp
+(setq dired-use-ls-dired nil)
+#+end_src
+
+* Tangling this file
+
+I automatically tangle this file on save. Saves me from having to remember doing
+it.
+
+#+begin_src elisp
+(add-hook! after-save
+  (defun tangle-doom-conf ()
+    "Tangle the private doom configuration."
+    (when (equal buffer-file-name (concat doom-private-dir "README.org"))
+      (org-babel-tangle))))
+#+end_src

@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+# Create the staged version of the README file to a temporary file
+git show :README.org > README.tmp.org
+trap 'rm -f README.tmp.org' EXIT INT
+
+# Tangle the temporary file and stage the tangled files
+org-tangle README.tmp.org
+git add config.el packages.el pre-commit.hook
+
+# Revert to the previous state by re-tangling the previous version
+org-tangle README.org

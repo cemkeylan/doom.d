@@ -6,7 +6,15 @@ This is my Doom Emacs literate configuration. I am new to Doom, so I don't know
 what I want to configure yet. I am trying to add some functions from my old
 vanilla Emacs configuration. I am still learning how to configure Doom as I was
 configuring my own vanilla Emacs. I prefer configuration from org-mode so I can
-easily navigate and better express myself.
+easily navigate and better express myself. I also may copy parts of the Doom
+documentation as reference to myself.
+
+* Useful Links
+
+Here are the references that I look frequently.
+
+[[doom-docs:api.org][- API Reference]]
+- [[doom-docs:modules.org][Modules Documentation]]
 
 * BOF and Personal Information
 

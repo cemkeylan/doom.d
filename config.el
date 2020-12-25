@@ -99,8 +99,8 @@
   :init
   (map!
    :leader
-   "m u" #'mu4e
-   "m c" #'mu4e-compose-new))
+   :desc "Open mu4e" "m u" #'mu4e
+   :desc "Compose mail" "m c" #'mu4e-compose-new))
 
 (add-to-list 'load-path "~/conf/mu4e/")
 (use-package mu4e-config
